@@ -1,0 +1,54 @@
+<form>
+  <input id="code" type="text" value="sin(1e-4 * t) * 255"><br>
+  <input id="play" type="submit" value="Play">
+</form>
+<br><br><span id="error"></span><br>
+<div id="player"></div>
+
+<script src="bytebeat.js"></script>
+<script>
+function byId(id) {
+    return document.getElementById(id);
+}
+
+var audio = document.createElement('audio');
+byId('player').appendChild(audio);
+if (typeof(audio.play) === 'undefined') {
+    alert("You don't seem to have a browser that supports audio. It's ok, you're not a bad person. But this app will fail.");
+}
+
+function play() {
+    byId('error').innerText = "";
+    try {
+        playDataURI(reallyPlay(byId('code').value));
+    } catch (err) {
+        byId('error').innerText = "" + err;
+    }
+    return false;
+}
+
+function reallyPlay(code) {
+    var frequency = 8000;
+    var duration = 30;
+    return makeAudioURI(frequency,
+                        makeSound(compileComposer(code),
+                                  frequency * duration));
+}
+
+function stopPlaying() {
+    if (audio) byId('player').removeChild(audio);
+    audio = null;
+}
+
+function playDataURI(uri) {
+    stopPlaying();
+    audio = document.createElement('audio');
+    audio.setAttribute('autoplay', true);
+    audio.setAttribute('src', uri);
+    audio.setAttribute('controls', 'controls');
+    byId('player').appendChild(audio);
+}
+
+byId('code').focus();
+byId('play').onclick = play;
+</script>
