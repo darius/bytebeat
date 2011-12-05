@@ -13,27 +13,34 @@ function makeSound(composer, nsamples) {
     var result = [];
     for (var t = 0; t < nsamples; ++t) {
         var sample = 0xFF & composer(t);
-        result.push(Math.max(0, Math.min(sample * 256, 65535)));
+        result.push(sample);
     }
     return result;
 }
 
 function makeAudioURI(frequency, samples) {
-    var bitsPerSample = 16;    
+    var bitsPerSample = 8;
     var channels = 1;
     return "data:audio/x-wav," + hexEncodeURI(RIFFChunk(channels, bitsPerSample,
                                                         frequency, samples));
 }
+
+var hexCodes = (function () {
+    var result = [];
+    for (var b = 0; b < 256; ++b) {
+        var hex = b.toString(16);
+        if (hex.length === 1) hex = "0" + hex;
+        result.push("%" + hex);
+    }
+    return result;
+})();
     
 // [255, 0] -> "%FF%00"
 function hexEncodeURI(values) {
-    var result = "";
-    for (var i = 0; i < values.length; ++i) {
-        var hex = values[i].toString(16);
-        if (hex.length === 1) hex = "0" + hex;
-        result += "%" + hex;
-    }
-    return result.toUpperCase();
+    var codes = [];
+    for (var i = 0; i < values.length; ++i)
+        codes.push(hexCodes[values[i]]);
+    return codes.join('');
 }
 
 function RIFFChunk(channels, bitsPerSample, frequency, samples) {
@@ -65,24 +72,9 @@ function FMTSubChunk(channels, bitsPerSample, frequency) {
 function dataSubChunk(channels, bitsPerSample, samples) {
     return [].concat(
         cc("data"),
-        bytesFromU32(samples.length * channels * bitsPerSample/8),
-        samplesToData(samples, bitsPerSample)
+        bytesFromU32(channels * samples.length * bitsPerSample/8),
+        samples
     );
-}
-
-function samplesToData(samples, bitsPerSample) {
-    if (bitsPerSample === 8)
-        return samples;
-    if (bitsPerSample !== 16) {
-        alert("Only 8 or 16 bit supported.");
-        return;
-    }
-    var data = [];
-    for (var i = 0; i < samples.length; ++i) {
-        data.push(0xFF & samples[i]);
-        data.push(0xFF & (samples[i] >> 8));
-    }
-    return data;
 }
 
 // String to array of byte values.

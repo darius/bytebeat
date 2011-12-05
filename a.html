@@ -14,7 +14,7 @@ function byId(id) {
 var audio = document.createElement('audio');
 byId('player').appendChild(audio);
 if (typeof(audio.play) === 'undefined') {
-    alert("You don't seem to have a browser that supports audio. It's ok, you're not a bad person. But this app will fail.");
+    alert("Your browser doesn't seem to support audio. It's OK, you're not a bad person. But this app will fail.");
 }
 
 function play() {
@@ -22,7 +22,7 @@ function play() {
     try {
         playDataURI(reallyPlay(byId('code').value));
     } catch (err) {
-        byId('error').innerText = "" + err;
+        byId('error').innerHTML = "" + err;
     }
     return false;
 }
@@ -36,7 +36,11 @@ function reallyPlay(code) {
 }
 
 function stopPlaying() {
-    if (audio) byId('player').removeChild(audio);
+    if (audio) {
+        audio.pause();          // This is said to keep it from playing overlong,
+        audio.src = "";         // though I haven't noticed any difference.
+        byId('player').removeChild(audio);
+    }
     audio = null;
 }
 
