@@ -1,9 +1,9 @@
 <form>
-  <input id="code" type="text" value="sin(1e-4 * t) * 255"><br>
+  <input id="code" type="text" value="t ^ t/8"><br>
   <input id="play" type="submit" value="Play">
 </form>
 <br><br><span id="error"></span><br>
-<div id="player"></div>
+<audio id="player" autoplay="true" controls></audio>
 
 <script src="bytebeat.js"></script>
 <script>
@@ -11,46 +11,25 @@ function byId(id) {
     return document.getElementById(id);
 }
 
-var audio = document.createElement('audio');
-byId('player').appendChild(audio);
+var audio = byId('player');
 if (typeof(audio.play) === 'undefined') {
     alert("Your browser doesn't seem to support audio. It's OK, you're not a bad person. But this app will fail.");
 }
 
 function play() {
-    byId('error').innerText = "";
+    byId('error').innerHTML = "";
     try {
-        playDataURI(reallyPlay(byId('code').value));
+        audio.src = generateAudio(byId('code').value);
     } catch (err) {
         byId('error').innerHTML = "" + err;
     }
     return false;
 }
 
-function reallyPlay(code) {
+function generateAudio(code) {
     var frequency = 8000;
     var duration = 30;
-    return makeAudioURI(frequency,
-                        makeSound(compileComposer(code),
-                                  frequency * duration));
-}
-
-function stopPlaying() {
-    if (audio) {
-        audio.pause();          // This is said to keep it from playing overlong,
-        audio.src = "";         // though I haven't noticed any difference.
-        byId('player').removeChild(audio);
-    }
-    audio = null;
-}
-
-function playDataURI(uri) {
-    stopPlaying();
-    audio = document.createElement('audio');
-    audio.setAttribute('autoplay', true);
-    audio.setAttribute('src', uri);
-    audio.setAttribute('controls', 'controls');
-    byId('player').appendChild(audio);
+    return audioFromExpression(code, frequency, duration);
 }
 
 byId('code').focus();

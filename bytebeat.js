@@ -1,3 +1,9 @@
+function audioFromExpression(code, frequency, duration) {
+    return makeAudioURI(frequency,
+                        makeSound(compileComposer(code),
+                                  frequency * duration));
+}
+
 function compileComposer(text) {
     return eval("(function(t) { return "
                 + (text
