@@ -45,6 +45,7 @@ function hexEncodeURI(values) {
 }
 
 function RIFFChunk(channels, bitsPerSample, frequency, samples) {
+    // See https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
     var fmt = FMTSubChunk(channels, bitsPerSample, frequency);
     var data = dataSubChunk(channels, bitsPerSample, samples);
     var header = [].concat(cc("RIFF"), chunkSize(fmt, data), cc("WAVE"));
@@ -61,7 +62,7 @@ function FMTSubChunk(channels, bitsPerSample, frequency) {
     return [].concat(
         cc("fmt "),
         bytesFromU32(16), // Subchunk1Size for PCM
-        [1, 0], // PCM is 1, split to 16 bit
+        [1, 0], // PCM is 1
         [channels, 0], 
         bytesFromU32(frequency),
         bytesFromU32(byteRate),
@@ -81,9 +82,8 @@ function dataSubChunk(channels, bitsPerSample, samples) {
 // String to array of byte values.
 function cc(str) {
     var result = [];
-    for (var i = 0; i < str.length; ++i) {
+    for (var i = 0; i < str.length; ++i)
         result.push(str.charCodeAt(i)); // XXX check that it's a byte
-    }
     return result;
 }
 
