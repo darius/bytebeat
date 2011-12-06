@@ -17,10 +17,8 @@ function compileComposer(text) {
 
 function makeSound(composer, nsamples) {
     var result = [];
-    for (var t = 0; t < nsamples; ++t) {
-        var sample = 0xFF & composer(t);
-        result.push(sample);
-    }
+    for (var t = 0; t < nsamples; ++t)
+        result.push(0xFF & composer(t));
     return result;
 }
 
@@ -33,11 +31,8 @@ function makeAudioURI(frequency, samples) {
 
 var hexCodes = (function () {
     var result = [];
-    for (var b = 0; b < 256; ++b) {
-        var hex = b.toString(16);
-        if (hex.length === 1) hex = "0" + hex;
-        result.push("%" + hex);
-    }
+    for (var b = 0; b < 256; ++b)
+        result.push((b < 16 ? "%0" : "%") + b.toString(16));
     return result;
 })();
     
