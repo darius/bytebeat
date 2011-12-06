@@ -8,8 +8,10 @@ function translate(source) {
 function simulate(op, stack) {
     if (opTable[op])
         opTable[op](stack);
+    else if (!isNaN(op))
+        stack.push(op);  // It's a number
     else
-        stack.push(op);         // XXX check that it's a literal
+        throw "Unknown op: " + op;
 }
 
 function literalOp(op) {
