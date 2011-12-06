@@ -36,7 +36,7 @@ var hexCodes = (function () {
     return result;
 })();
     
-// [255, 0] -> "%FF%00"
+// [255, 0] -> "%ff%00"
 function hexEncodeURI(values) {
     var codes = [];
     for (var i = 0; i < values.length; ++i)
