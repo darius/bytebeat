@@ -1,7 +1,11 @@
-function translate(source) {
+function jsFromRPN(string) {
+    return translate(string.split(' '));
+}
+
+function translate(tokens) {
     var stack = [];
-    for (var i = 0; i < source.length; ++i)
-        simulate(source[i], stack);
+    for (var i = 0; i < tokens.length; ++i)
+        simulate(tokens[i], stack);
     return stack[stack.length - 1];
 }
 
