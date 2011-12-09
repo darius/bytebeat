@@ -1,32 +1,33 @@
-function audioFromExpression(code, frequency, duration) {
-    return makeAudioURI(frequency,
-                        makeSound(compileComposer(code),
-                                  frequency * duration));
+function showAudioVisual(samples, player, viz) {
+    player.src = makeAudioURI(samples);
+    visualize(viz, samples, player);
 }
+
+
+// Sample generation
 
 function compileComposer(text) {
     return eval("(function(t) { return "
-                + (text
-                   .replace(/sin/g, "Math.sin")
-                   .replace(/cos/g, "Math.cos")
-                   .replace(/tan/g, "Math.tan")
-                   .replace(/floor/g, "Math.floor")
-                   .replace(/ceil/g, "Math.ceil"))
+                + text.replace(/sin|cos|tan|floor|ceil/g,
+                               function(str) { return "Math."+str; })
                 + "})");
 }
 
-function makeSound(composer, nsamples) {
+function makeSound(composer, duration, frequency) {
     var result = [];
-    for (var t = 0; t < nsamples; ++t)
+    result.duration = duration;
+    result.frequency = frequency;
+    result.bitsPerSample = 8;
+    for (var t = 0; t < duration * frequency; ++t)
         result.push(0xFF & composer(t));
     return result;
 }
 
-function makeAudioURI(frequency, samples) {
-    var bitsPerSample = 8;
-    var channels = 1;
-    return "data:audio/x-wav," + hexEncodeURI(RIFFChunk(channels, bitsPerSample,
-                                                        frequency, samples));
+
+// URI encoding
+
+function makeAudioURI(samples) {
+    return "data:audio/x-wav," + hexEncodeURI(RIFFChunk(1, samples));
 }
 
 var hexCodes = (function () {
@@ -44,10 +45,13 @@ function hexEncodeURI(values) {
     return codes.join('');
 }
 
-function RIFFChunk(channels, bitsPerSample, frequency, samples) {
+
+// WAV file format
+
+function RIFFChunk(nchannels, samples) {
     // See https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
-    var fmt = FMTSubChunk(channels, bitsPerSample, frequency);
-    var data = dataSubChunk(channels, bitsPerSample, samples);
+    var fmt = FMTSubChunk(nchannels, samples.bitsPerSample, samples.frequency);
+    var data = dataSubChunk(nchannels, samples);
     var header = [].concat(cc("RIFF"), chunkSize(fmt, data), cc("WAVE"));
     return [].concat(header, fmt, data);
 }
@@ -56,14 +60,14 @@ function chunkSize(fmt, data) {
     return bytesFromU32(4 + (8 + fmt.length) + (8 + data.length));
 }
 
-function FMTSubChunk(channels, bitsPerSample, frequency) {
-    var byteRate = frequency * channels * bitsPerSample/8;
-    var blockAlign = channels * bitsPerSample/8;
+function FMTSubChunk(nchannels, bitsPerSample, frequency) {
+    var byteRate = frequency * nchannels * bitsPerSample/8;
+    var blockAlign = nchannels * bitsPerSample/8;
     return [].concat(
         cc("fmt "),
         bytesFromU32(16), // Subchunk1Size for PCM
         [1, 0], // PCM is 1
-        [channels, 0], 
+        [nchannels, 0], 
         bytesFromU32(frequency),
         bytesFromU32(byteRate),
         [blockAlign, 0],
@@ -71,10 +75,10 @@ function FMTSubChunk(channels, bitsPerSample, frequency) {
     );
 }
 
-function dataSubChunk(channels, bitsPerSample, samples) {
+function dataSubChunk(nchannels, samples) {
     return [].concat(
         cc("data"),
-        bytesFromU32(channels * samples.length * bitsPerSample/8),
+        bytesFromU32(nchannels * samples.length * samples.bitsPerSample/8),
         samples
     );
 }
@@ -89,4 +93,52 @@ function cc(str) {
 
 function bytesFromU32(v) {
     return [0xFF & v, 0xFF & (v>>8), 0xFF & (v>>16), 0xFF & (v>>24)];
+}
+
+
+// Visualization
+
+var prev_t = null;
+
+function visualize(canvas, samples, audio) {
+    canvasUpdate(canvas, function(pixbuf, width, height) {
+        var p = 0;
+        for (var y = 0; y < height; ++y) {
+            for (var x = 0; x < width; ++x) {
+                var s = samples[height * x + y];
+                pixbuf[p++] = s;
+                pixbuf[p++] = s;
+                pixbuf[p++] = s;
+                pixbuf[p++] = 0xFF;
+            }
+        }
+    });
+    if (audio)
+        audio.ontimeupdate = function() { updateViz(viz, audio, samples.frequency); };
+    prev_t = null;
+}
+
+function updateViz(canvas, audio, frequency) {
+    canvasUpdate(canvas, function(pixbuf, width, height) {
+        if (prev_t !== null)
+            flip(prev_t);
+        var t = Math.floor((audio.currentTime * frequency) / height);
+        flip(t); prev_t = t;
+
+        function flip(x) {
+            if (x < width) {
+                for (var y = 0; y < height; ++y) {
+                    var p = 4 * (width * y + x);
+                    pixbuf[p+3] ^= 0xC0; // Toggle translucency at (x,y)
+                }
+            }
+        }
+    });
+}
+
+function canvasUpdate(canvas, f) {
+    var ctx = canvas.getContext("2d");
+    var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    f(imageData.data, canvas.width, canvas.height);
+    ctx.putImageData(imageData, 0, 0);
 }

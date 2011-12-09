@@ -1,37 +1,43 @@
 <form>
-  <input id="code" type="text" value="t ^ t/8"><br>
+  <input id="code" type="text" value="t ^ t>>8"><br>
   <input id="play" type="submit" value="Play">
 </form>
-<br><br><span id="error"></span><br>
 <audio id="player" autoplay="true" controls></audio>
+<p>
+<canvas id="viz" height="256" width="512"></canvas>
+<p id="error">
 
 <script src="bytebeat.js"></script>
 <script>
+
+function dbg(msg) {
+    if (window.console)
+	console.log(msg);
+}
 function byId(id) {
     return document.getElementById(id);
 }
+var code   = byId('code');
+var player = byId('player');
+var viz    = byId('viz');
+var error  = byId('error');
 
-var audio = byId('player');
-if (typeof(audio.play) === 'undefined') {
+if (typeof(player.play) === 'undefined') {
     alert("Your browser doesn't seem to support audio. It's OK, you're not a bad person. But this app will fail.");
 }
 
 function play() {
-    byId('error').innerHTML = "";
+    error.innerHTML = '';
     try {
-        audio.src = generateAudio(byId('code').value);
+        showAudioVisual(makeSound(compileComposer(code.value), 30, 8000),
+                        player, viz);
     } catch (err) {
-        byId('error').innerHTML = "" + err;
+        error.innerHTML = '' + err;
     }
     return false;
 }
 
-function generateAudio(code) {
-    var frequency = 8000;
-    var duration = 30;
-    return audioFromExpression(code, frequency, duration);
-}
-
-byId('code').focus();
+code.focus();
 byId('play').onclick = play;
+
 </script>
