@@ -1,6 +1,6 @@
-function showAudioVisual(samples, player, viz) {
-    player.src = makeAudioURI(samples);
-    visualize(viz, samples, player);
+function showAudioVisual(sound, player, viz) {
+    player.src = makeAudioURI(sound);
+    visualize(viz, sound, player);
 }
 
 
@@ -14,20 +14,22 @@ function compileComposer(text) {
 }
 
 function makeSound(composer, duration, rate) {
-    var result = [];
-    result.duration = duration;
-    result.rate = rate;
-    result.bytesPerSample = 1;
+    var bytes = [];
     for (var t = 0; t < duration * rate; ++t)
-        result.push(0xFF & composer(t));
-    return result;
+        bytes.push(0xFF & composer(t));
+    return {
+        duration: duration,
+        rate: rate,
+        bytesPerSample: 1,
+        bytes: bytes
+    };
 }
 
 
 // URI encoding
 
-function makeAudioURI(samples) {
-    return "data:audio/x-wav," + hexEncodeURI(RIFFChunk(samples));
+function makeAudioURI(sound) {
+    return "data:audio/x-wav," + hexEncodeURI(RIFFChunk(sound));
 }
 
 var hexCodes = (function () {
@@ -49,26 +51,26 @@ function hexEncodeURI(values) {
 // WAV file format
 // See https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
 
-function RIFFChunk(samples) {
+function RIFFChunk(sound) {
     var nchannels = 1;
     return [].concat(
-        // Header
+        // Header (length 12)
         cc("RIFF"), 
-        bytesFromU32(36 + 8 + samples.length), // sum of subchunk lengths
+        bytesFromU32(12 + 24 + 8 + sound.bytes.length),
         cc("WAVE"),
-        // "fmt " subchunk:
+        // "fmt " subchunk (length 24):
         cc("fmt "),
         bytesFromU32(16), // Subchunk1Size = 16 for PCM
         bytesFromU16(1),  // AudioFormat = 1 for PCM
         bytesFromU16(nchannels),
-        bytesFromU32(samples.rate),
-        bytesFromU32(nchannels * samples.rate * samples.bytesPerSample),
-        bytesFromU16(nchannels * samples.bytesPerSample),
-        bytesFromU16(8 * samples.bytesPerSample),
-        // "data" subchunk:
+        bytesFromU32(sound.rate),
+        bytesFromU32(nchannels * sound.rate * sound.bytesPerSample),
+        bytesFromU16(nchannels * sound.bytesPerSample),
+        bytesFromU16(8 * sound.bytesPerSample),
+        // "data" subchunk (length 8 + sound.bytes.length):
         cc("data"),
-        bytesFromU32(nchannels * samples.length),
-        samples
+        bytesFromU32(nchannels * sound.bytes.length),
+        sound.bytes
     );
 }
 
@@ -92,8 +94,9 @@ function bytesFromU32(v) {
 
 var prev_t = null;
 
-function visualize(canvas, samples, audio) {
+function visualize(canvas, sound, audio) {
     canvasUpdate(canvas, function(pixbuf, width, height) {
+        var samples = sound.bytes;
         var p = 0;
         for (var y = 0; y < height; ++y) {
             for (var x = 0; x < width; ++x) {
@@ -107,7 +110,7 @@ function visualize(canvas, samples, audio) {
     });
     if (audio)
         audio.ontimeupdate = function() {
-            updateViz(canvas, audio, samples.rate);
+            updateViz(canvas, audio, sound.rate);
         };
     prev_t = null;
 }
