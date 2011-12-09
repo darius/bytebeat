@@ -106,7 +106,9 @@ function visualize(canvas, samples, audio) {
         }
     });
     if (audio)
-        audio.ontimeupdate = function() { updateViz(viz, audio, samples.rate); };
+        audio.ontimeupdate = function() {
+            updateViz(canvas, audio, samples.rate);
+        };
     prev_t = null;
 }
 
