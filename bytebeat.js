@@ -13,12 +13,12 @@ function compileComposer(text) {
                 + "})");
 }
 
-function makeSound(composer, duration, frequency) {
+function makeSound(composer, duration, rate) {
     var result = [];
     result.duration = duration;
-    result.frequency = frequency;
-    result.bitsPerSample = 8;
-    for (var t = 0; t < duration * frequency; ++t)
+    result.rate = rate;
+    result.bytesPerSample = 1;
+    for (var t = 0; t < duration * rate; ++t)
         result.push(0xFF & composer(t));
     return result;
 }
@@ -27,7 +27,7 @@ function makeSound(composer, duration, frequency) {
 // URI encoding
 
 function makeAudioURI(samples) {
-    return "data:audio/x-wav," + hexEncodeURI(RIFFChunk(1, samples));
+    return "data:audio/x-wav," + hexEncodeURI(RIFFChunk(samples));
 }
 
 var hexCodes = (function () {
@@ -47,38 +47,27 @@ function hexEncodeURI(values) {
 
 
 // WAV file format
+// See https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
 
-function RIFFChunk(nchannels, samples) {
-    // See https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
-    var fmt = FMTSubChunk(nchannels, samples.bitsPerSample, samples.frequency);
-    var data = dataSubChunk(nchannels, samples);
-    var header = [].concat(cc("RIFF"), chunkSize(fmt, data), cc("WAVE"));
-    return [].concat(header, fmt, data);
-}
-
-function chunkSize(fmt, data) {
-    return bytesFromU32(4 + (8 + fmt.length) + (8 + data.length));
-}
-
-function FMTSubChunk(nchannels, bitsPerSample, frequency) {
-    var byteRate = frequency * nchannels * bitsPerSample/8;
-    var blockAlign = nchannels * bitsPerSample/8;
+function RIFFChunk(samples) {
+    var nchannels = 1;
     return [].concat(
+        // Header
+        cc("RIFF"), 
+        bytesFromU32(36 + 8 + samples.length), // sum of subchunk lengths
+        cc("WAVE"),
+        // "fmt " subchunk:
         cc("fmt "),
-        bytesFromU32(16), // Subchunk1Size for PCM
-        [1, 0], // PCM is 1
-        [nchannels, 0], 
-        bytesFromU32(frequency),
-        bytesFromU32(byteRate),
-        [blockAlign, 0],
-        [bitsPerSample, 0]
-    );
-}
-
-function dataSubChunk(nchannels, samples) {
-    return [].concat(
+        bytesFromU32(16), // Subchunk1Size = 16 for PCM
+        bytesFromU16(1),  // AudioFormat = 1 for PCM
+        bytesFromU16(nchannels),
+        bytesFromU32(samples.rate),
+        bytesFromU32(nchannels * samples.rate * samples.bytesPerSample),
+        bytesFromU16(nchannels * samples.bytesPerSample),
+        bytesFromU16(8 * samples.bytesPerSample),
+        // "data" subchunk:
         cc("data"),
-        bytesFromU32(nchannels * samples.length * samples.bitsPerSample/8),
+        bytesFromU32(nchannels * samples.length),
         samples
     );
 }
@@ -91,6 +80,9 @@ function cc(str) {
     return result;
 }
 
+function bytesFromU16(v) {
+    return [0xFF & v, 0xFF & (v>>8)];
+}
 function bytesFromU32(v) {
     return [0xFF & v, 0xFF & (v>>8), 0xFF & (v>>16), 0xFF & (v>>24)];
 }
@@ -114,15 +106,15 @@ function visualize(canvas, samples, audio) {
         }
     });
     if (audio)
-        audio.ontimeupdate = function() { updateViz(viz, audio, samples.frequency); };
+        audio.ontimeupdate = function() { updateViz(viz, audio, samples.rate); };
     prev_t = null;
 }
 
-function updateViz(canvas, audio, frequency) {
+function updateViz(canvas, audio, rate) {
     canvasUpdate(canvas, function(pixbuf, width, height) {
         if (prev_t !== null)
             flip(prev_t);
-        var t = Math.floor((audio.currentTime * frequency) / height);
+        var t = Math.floor((audio.currentTime * rate) / height);
         flip(t); prev_t = t;
 
         function flip(x) {
