@@ -1,11 +1,12 @@
 <form id="form">
-  <input id="code0" type="text" size="50" value="t ^ t>>8">
-  <input id="code1" type="text" size="50" value=""><br>
-  <input id="play" type="submit" value="Play">
+  <input id="play" type="submit" value="Play"> 
+  <input id="code0" type="text" size="50" value="t ^ t>>8"> and optionally
+  <input id="code1" type="text" size="50" value=""><br>for
+  <input id="duration" type="text" size="1" value="15"> seconds at
   <input name="samplerate" type="radio" value="8000" checked>8 kHz
   <input name="samplerate" type="radio" value="11025">11 kHz
   <input name="samplerate" type="radio" value="22050">22 kHz
-  <input name="samplerate" type="radio" value="44100">44 kHz
+  <input name="samplerate" type="radio" value="44100">44 kHz.
 </form>
 <audio id="player" autoplay="true" controls></audio>
 <p>
@@ -37,8 +38,13 @@ function play() {
     try {
         var composers = [compileComposer(nonempty(code0) ? code0.value : "0")];
         if (nonempty(code1)) composers.push(compileComposer(code1.value));
+
+        var duration = parseFloat(byId('duration').value);
+        if (duration === 0) duration = 15;
+
         var rate = parseInt(getCheckedValue(samplerate));
-        showAudioVisual(makeSound(composers, 30, rate, 1),
+
+        showAudioVisual(makeSound(composers, duration, rate, 1),
                         player, viz);
     } catch (err) {
         error.innerHTML = '' + err;
