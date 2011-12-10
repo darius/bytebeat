@@ -120,6 +120,7 @@ function hexEncodeURI(values) {
 var prev_t = null;
 
 function visualize(canvas, sound, audio) {
+    // A dot for each sample (green/blue for channel 0/1).
     canvasUpdate(canvas, function(pixbuf, width, height) {
         var p = 0;
         for (var y = 0; y < height; ++y) {
@@ -134,23 +135,48 @@ function visualize(canvas, sound, audio) {
     });
     if (audio)
         audio.ontimeupdate = function() {
-            updateViz(canvas, audio, sound.rate);
+            updateViz(canvas, audio, sound);
         };
     prev_t = null;
 }
 
-function updateViz(canvas, audio, rate) {
+function updateViz(canvas, audio, sound) {
+    var T = sound.duration * sound.rate;
     canvasUpdate(canvas, function(pixbuf, width, height) {
         if (prev_t !== null)
             flip(prev_t);
-        var t = Math.floor((audio.currentTime * rate) / height);
+        var t = audio.currentTime * sound.rate;
         flip(t); prev_t = t;
 
-        function flip(x) {
-            if (x < width) {
-                for (var y = 0; y < height; ++y) {
+        function flip(t) {
+            wave(t);
+            progress(t);
+        }
+
+        // A red waveform for the next 'width' samples.
+        function wave(t) {
+            var prevSample = sound.channel0_8bit(t);
+            var after = Math.max(0, Math.min(T, width));
+            for (var x = 0; x < after; ++x) {
+                // XXX just channel 0 for now
+                var sample = (height / 256) * sound.channel0_8bit(t + x);
+                var lo = Math.min(prevSample, sample);
+                var hi = Math.max(prevSample, sample);
+                for (var y = height-1 - hi; y <= height-1 - lo; ++y) {
                     var p = 4 * (width * y + x);
-                    pixbuf[p+3] ^= 0xC0; // Toggle translucency at (x,y)
+                    pixbuf[p] ^= 0xFF;
+                }
+                prevSample = sample;
+            }
+        }
+
+        // A progress bar as a vertical line of translucency.
+        function progress(t) {
+            var x = Math.floor(t / height);
+            if (x < width) {
+                for (y = 0; y < height; ++y) {
+                    p = 4 * (width * y + x);
+                    pixbuf[p+3] ^= 0xC0;
                 }
             }
         }
