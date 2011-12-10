@@ -1,5 +1,5 @@
 function jsFromRPN(string) {
-    return translate(string.split(' '));
+    return translate(string.match(/\S+/g));
 }
 
 function translate(tokens) {
