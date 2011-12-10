@@ -1,11 +1,15 @@
-<form>
-  <input id="code0" type="text" value="t ^ t>>8"><br>
-  <input id="code1" type="text" value=""><br>
+<form id="form">
+  <input id="code0" type="text" size="60" value="t ^ t>>8"><br>
+  <input id="code1" type="text" size="60" value=""><br>
   <input id="play" type="submit" value="Play">
+  <input name="samplerate" type="radio" value="8000" checked>8 kHz
+  <input name="samplerate" type="radio" value="11025">11 kHz
+  <input name="samplerate" type="radio" value="22050">22 kHz
+  <input name="samplerate" type="radio" value="44100">44 kHz
 </form>
 <audio id="player" autoplay="true" controls></audio>
 <p>
-<canvas id="viz" height="256" width="512"></canvas>
+<canvas id="viz" height="256" width="768"></canvas>
 <p id="error">
 
 <script src="bytebeat.js"></script>
@@ -18,22 +22,24 @@ function dbg(msg) {
 function byId(id) {
     return document.getElementById(id);
 }
-var code0 = byId('code0');
-var code1 = byId('code1');
-var error = byId('error');
+var code0      = byId('code0');
+var code1      = byId('code1');
+var samplerate = byId('form').samplerate;
+var player     = byId('player');
+var viz        = byId('viz');
+var error      = byId('error');
 
-if (typeof(player.play) === 'undefined') {
-    alert("Your browser doesn't seem to support audio. It's OK, you're not a bad person. But this app will fail.");
-}
+if (typeof(player.play) === 'undefined')
+    alert("Your browser doesn't seem to support HTML5 audio. Sorry.");
 
 function play() {
     error.innerHTML = '';
     try {
-        var composers = [];
-        if (nonempty(code0)) composers.push(compileComposer(code0.value));
+        var composers = [compileComposer(nonempty(code0) ? code0.value : "0")];
         if (nonempty(code1)) composers.push(compileComposer(code1.value));
-        showAudioVisual(makeSound(composers, 30, 8000, 1),
-                        byId('player'), byId('viz'));
+        var rate = parseInt(getCheckedValue(samplerate));
+        showAudioVisual(makeSound(composers, 30, rate, 1),
+                        player, viz);
     } catch (err) {
         error.innerHTML = '' + err;
     }
@@ -42,6 +48,12 @@ function play() {
 
 function nonempty(field) {
     return field.value.match(/\S/);
+}
+
+function getCheckedValue(buttons) {
+    for (var i = 0; i < buttons.length; ++i)
+        if (buttons[i].checked)
+            return buttons[i].value;
 }
 
 code0.focus();
