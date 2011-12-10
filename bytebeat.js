@@ -4,8 +4,6 @@ function showAudioVisual(sound, player, viz) {
 }
 
 
-// Sound generation
-
 function compileComposer(text) {
     return eval("(function(t) { return "
                 + text.replace(/sin|cos|tan|floor|ceil/g,
@@ -13,65 +11,70 @@ function compileComposer(text) {
                 + "})");
 }
 
-function makeSound(composer, duration, rate) {
-    var bytes = [];
-    for (var t = 0; t < duration * rate; ++t)
-        bytes.push(0xFF & composer(t));
-    return {
-        duration: duration,
-        nchannels: 1,
-        rate: rate,
-        bytesPerSample: 1,
-        bytes: bytes
-    };
-}
 
-
-// URI encoding
-
-function makeAudioURI(sound) {
-    return "data:audio/x-wav," + hexEncodeURI(RIFFChunk(sound));
-}
-
-var hexCodes = (function () {
-    var result = [];
-    for (var b = 0; b < 256; ++b)
-        result.push((b < 16 ? "%0" : "%") + b.toString(16));
-    return result;
-})();
-    
-// [255, 0] -> "%ff%00"
-function hexEncodeURI(values) {
-    var codes = [];
-    for (var i = 0; i < values.length; ++i)
-        codes.push(hexCodes[values[i]]);
-    return codes.join('');
-}
-
-
-// WAV file format
+// Sound generation into WAV format
 // See https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
 
-function RIFFChunk(sound) {
-    return [].concat(
+function makeSound(composers, duration, rate, bytesPerSample) {
+    if (bytesPerSample !== 1)
+        throw "I only do 8-bit audio yet";
+
+    var nsamples = duration * rate;
+    var nchannels = composers.length;
+    var dataLength = nsamples * nchannels * bytesPerSample;
+
+    var metadataLength = 12 + 24 + 8;
+    var bytes = [].concat(
         // Header (length 12)
         cc("RIFF"), 
-        bytesFromU32(12 + 24 + 8 + sound.bytes.length),
+        bytesFromU32(metadataLength + dataLength),
         cc("WAVE"),
         // "fmt " subchunk (length 24):
         cc("fmt "),
-        bytesFromU32(16), // Subchunk1Size = 16 for PCM
+        bytesFromU32(16), // length of this subchunk's data
         bytesFromU16(1),  // AudioFormat = 1 for PCM
-        bytesFromU16(sound.nchannels),
-        bytesFromU32(sound.rate),
-        bytesFromU32(sound.rate * sound.nchannels * sound.bytesPerSample),
-        bytesFromU16(sound.nchannels * sound.bytesPerSample),
-        bytesFromU16(8 * sound.bytesPerSample),
-        // "data" subchunk (length 8 + sound.bytes.length):
+        bytesFromU16(nchannels),
+        bytesFromU32(rate),
+        bytesFromU32(rate * nchannels * bytesPerSample),
+        bytesFromU16(nchannels * bytesPerSample),
+        bytesFromU16(8 * bytesPerSample),
+        // "data" subchunk (length 8 + length(following samples)):
         cc("data"),
-        bytesFromU32(sound.bytes.length),
-        sound.bytes
+        bytesFromU32(dataLength)
     );
+    if (bytes.length !== metadataLength)
+        throw "Assertion failure";
+    if (nchannels === 1) {
+        var composer = composers[0];
+        for (var t = 0; t < nsamples; ++t)
+            bytes.push(0xFF & composer(t));
+    } else if (nchannels === 2) {
+        var composer0 = composers[0];
+        var composer1 = composers[1];
+        for (var t = 0; t < nsamples; ++t) {
+            bytes.push(0xFF & composer0(t));
+            bytes.push(0xFF & composer1(t));
+        }
+    } else
+        throw "I only do 1- or 2-channel audio";
+    if (bytes.length !== metadataLength + dataLength)
+        throw "Assertion failure";
+
+    return {
+        duration: duration,
+        rate: rate,
+        nchannels: nchannels,
+        bytesPerSample: bytesPerSample,
+        bytes: bytes,
+        channel0_8bit: function(t) { 
+            return bytes[metadataLength + t * nchannels]; 
+        },
+        channel1_8bit: (nchannels < 2
+                        ? function(t) { return 0; }
+                        : function(t) { 
+                            return bytes[metadataLength + t * nchannels + 1];
+                        }),
+    };
 }
 
 // String to array of byte values.
@@ -90,22 +93,41 @@ function bytesFromU32(v) {
 }
 
 
+// URI encoding
+
+function makeAudioURI(sound) {
+    return "data:audio/x-wav," + hexEncodeURI(sound.bytes);
+}
+
+var hexCodes = (function () {
+    var result = [];
+    for (var b = 0; b < 256; ++b)
+        result.push((b < 16 ? "%0" : "%") + b.toString(16));
+    return result;
+})();
+    
+// [255, 0] -> "%ff%00"
+function hexEncodeURI(values) {
+    var codes = [];
+    for (var i = 0; i < values.length; ++i)
+        codes.push(hexCodes[values[i]]);
+    return codes.join('');
+}
+
+
 // Visualization
 
 var prev_t = null;
 
 function visualize(canvas, sound, audio) {
-    if (sound.nchannels !== 1 || sound.bytesPerSample !== 1)
-        throw "XXX TBD";
     canvasUpdate(canvas, function(pixbuf, width, height) {
-        var samples = sound.bytes;
         var p = 0;
         for (var y = 0; y < height; ++y) {
             for (var x = 0; x < width; ++x) {
-                var s = samples[height * x + y];
-                pixbuf[p++] = s;
-                pixbuf[p++] = s;
-                pixbuf[p++] = s;
+                var t = height * x + y;
+                pixbuf[p++] = 0;
+                pixbuf[p++] = sound.channel0_8bit(t);
+                pixbuf[p++] = sound.channel1_8bit(t);
                 pixbuf[p++] = 0xFF;
             }
         }

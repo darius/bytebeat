@@ -1,5 +1,6 @@
 <form>
-  <input id="code" type="text" value="t ^ t>>8"><br>
+  <input id="code0" type="text" value="t ^ t>>8"><br>
+  <input id="code1" type="text" value=""><br>
   <input id="play" type="submit" value="Play">
 </form>
 <audio id="player" autoplay="true" controls></audio>
@@ -17,10 +18,9 @@ function dbg(msg) {
 function byId(id) {
     return document.getElementById(id);
 }
-var code   = byId('code');
-var player = byId('player');
-var viz    = byId('viz');
-var error  = byId('error');
+var code0 = byId('code0');
+var code1 = byId('code1');
+var error = byId('error');
 
 if (typeof(player.play) === 'undefined') {
     alert("Your browser doesn't seem to support audio. It's OK, you're not a bad person. But this app will fail.");
@@ -29,15 +29,22 @@ if (typeof(player.play) === 'undefined') {
 function play() {
     error.innerHTML = '';
     try {
-        showAudioVisual(makeSound(compileComposer(code.value), 30, 8000),
-                        player, viz);
+        var composers = [];
+        if (nonempty(code0)) composers.push(compileComposer(code0.value));
+        if (nonempty(code1)) composers.push(compileComposer(code1.value));
+        showAudioVisual(makeSound(composers, 30, 8000, 1),
+                        byId('player'), byId('viz'));
     } catch (err) {
         error.innerHTML = '' + err;
     }
     return false;
 }
 
-code.focus();
+function nonempty(field) {
+    return field.value.match(/\S/);
+}
+
+code0.focus();
 byId('play').onclick = play;
 
 </script>
