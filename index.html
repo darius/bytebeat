@@ -1,12 +1,15 @@
 <form id="form">
   <input id="play" type="submit" value="Play"> 
-  <input id="code0" type="text" size="50" value="t ^ t>>8"> and optionally
-  <input id="code1" type="text" size="50" value=""><br>for
+  <input id="code0" type="text" size="40" value="t ^ t>>8"> and optionally
+  <input id="code1" type="text" size="40" value=""><br>for
   <input id="duration" type="text" size="1" value="25"> seconds at
   <input name="samplerate" type="radio" value="8000" checked>8 kHz
   <input name="samplerate" type="radio" value="11025">11 kHz
   <input name="samplerate" type="radio" value="22050">22 kHz
   <input name="samplerate" type="radio" value="44100">44 kHz.
+  The expressions are in 
+  <input name="notation" type="radio" value="JavaScript" checked>JavaScript
+  <input name="notation" type="radio" value="RPN">RPN.
 </form>
 <audio id="player" autoplay="true" controls></audio>
 <p>
@@ -23,8 +26,9 @@
   matters most up at 44 kHz.
 
 <script src="bytebeat.js"></script>
+<script src="rpn.js"></script>
 <script>
-
+//'
 function dbg(msg) {
     if (window.console)
 	console.log(msg);
@@ -35,6 +39,7 @@ function byId(id) {
 var code0      = byId('code0');
 var code1      = byId('code1');
 var samplerate = byId('form').samplerate;
+var notation  =  byId('form').notation;
 var player     = byId('player');
 var viz        = byId('viz');
 var error      = byId('error');
@@ -45,8 +50,12 @@ if (typeof(player.play) === 'undefined')
 function play() {
     error.innerHTML = '';
     try {
-        var composers = [compileComposer(nonempty(code0) ? code0.value : "0")];
-        if (nonempty(code1)) composers.push(compileComposer(code1.value));
+        function asJS(field) {
+            var text = nonempty(field) ? field.value : '0';
+            return getCheckedValue(notation) === 'RPN' ? jsFromRPN(text) : text;
+        }
+        var composers = [compileComposer(asJS(code0))];
+        if (nonempty(code1)) composers.push(compileComposer(asJS(code1)));
 
         var duration = parseFloat(byId('duration').value);
         if (duration === 0) duration = 15;
