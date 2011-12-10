@@ -4,7 +4,7 @@ function showAudioVisual(sound, player, viz) {
 }
 
 
-// Sample generation
+// Sound generation
 
 function compileComposer(text) {
     return eval("(function(t) { return "
@@ -19,6 +19,7 @@ function makeSound(composer, duration, rate) {
         bytes.push(0xFF & composer(t));
     return {
         duration: duration,
+        nchannels: 1,
         rate: rate,
         bytesPerSample: 1,
         bytes: bytes
@@ -52,7 +53,6 @@ function hexEncodeURI(values) {
 // See https://ccrma.stanford.edu/courses/422/projects/WaveFormat/
 
 function RIFFChunk(sound) {
-    var nchannels = 1;
     return [].concat(
         // Header (length 12)
         cc("RIFF"), 
@@ -62,14 +62,14 @@ function RIFFChunk(sound) {
         cc("fmt "),
         bytesFromU32(16), // Subchunk1Size = 16 for PCM
         bytesFromU16(1),  // AudioFormat = 1 for PCM
-        bytesFromU16(nchannels),
+        bytesFromU16(sound.nchannels),
         bytesFromU32(sound.rate),
-        bytesFromU32(nchannels * sound.rate * sound.bytesPerSample),
-        bytesFromU16(nchannels * sound.bytesPerSample),
+        bytesFromU32(sound.rate * sound.nchannels * sound.bytesPerSample),
+        bytesFromU16(sound.nchannels * sound.bytesPerSample),
         bytesFromU16(8 * sound.bytesPerSample),
         // "data" subchunk (length 8 + sound.bytes.length):
         cc("data"),
-        bytesFromU32(nchannels * sound.bytes.length),
+        bytesFromU32(sound.bytes.length),
         sound.bytes
     );
 }
@@ -95,6 +95,8 @@ function bytesFromU32(v) {
 var prev_t = null;
 
 function visualize(canvas, sound, audio) {
+    if (sound.nchannels !== 1 || sound.bytesPerSample !== 1)
+        throw "XXX TBD";
     canvasUpdate(canvas, function(pixbuf, width, height) {
         var samples = sound.bytes;
         var p = 0;
