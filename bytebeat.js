@@ -171,8 +171,8 @@ function updateViz(canvas, audio, sound) {
         // A red waveform for the next 'width' samples.
         function wave(t) {
             var prevSample = sound.channel0_8bit(t);
-            var after = Math.max(0, Math.min(T, width)); // XXX fixme
-              for (var x = 0; x < after; ++x) {
+            var after = Math.max(0, Math.min(T-t, width));
+            for (var x = 0; x < after; ++x) {
                 // XXX just channel 0 for now
                 var sample = (height / 256) * sound.channel0_8bit(t + x);
                 var lo = Math.min(prevSample, sample);
