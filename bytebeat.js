@@ -135,6 +135,7 @@ function visualize(canvas, sound, audio) {
         }
     });
     if (audio) {
+        vizStop();
         function vizKickoff() { 
             vizStart(function() { updateViz(canvas, audio, sound); },
                      33.33);
@@ -185,11 +186,13 @@ function updateViz(canvas, audio, sound) {
             for (var x = 0; x < after; ++x) {
                 // XXX just channel 0 for now
                 var sample = (height / 256) * sound.channel0_8bit(t + x);
-                var lo = Math.min(prevSample, sample);
-                var hi = Math.max(prevSample, sample);
-                for (var y = height-1 - hi; y <= height-1 - lo; ++y) {
-                    var p = 4 * (width * y + x);
-                    pixbuf[p] ^= 0xFF;
+                if (prevSample | sample) {
+                    var lo = Math.min(prevSample, sample);
+                    var hi = Math.max(prevSample, sample);
+                    for (var y = height-1 - hi; y <= height-1 - lo; ++y) {
+                        var p = 4 * (width * y + x);
+                        pixbuf[p] ^= 0xFF;
+                    }
                 }
                 prevSample = sample;
             }
