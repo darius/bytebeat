@@ -154,14 +154,15 @@ function vizStart(drawNextFrame, msecPerFrame) {
 function updateViz(canvas, audio, sound) {
     var T = sound.duration * sound.rate;
     canvasUpdate(canvas, function(pixbuf, width, height) {
+        var t = Math.round(audio.currentTime * sound.rate);
+        if (prev_t === t)
+            return;
         if (prev_t !== null)
             flip(prev_t);
-        if (sound.duration <= audio.currentTime)
+        if (sound.duration <= audio.currentTime + .001)
             vizStop();
-        else {
-            var t = Math.round(audio.currentTime * sound.rate);
-            flip(t); prev_t = t;
-        }
+        else
+            flip(prev_t = t);
 
         function flip(t) {
             wave(t);
