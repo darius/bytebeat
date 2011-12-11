@@ -180,22 +180,42 @@ function updateViz(canvas, audio, sound) {
         }
 
         // A red waveform for the next 'width' samples.
+        // Two waves for stereo, actually, but any all-zero wave is suppressed.
         function wave(t) {
-            var prevSample = sound.channel0_8bit(t);
+            var prevSample0 = sound.channel0_8bit(t);
+            var prevSample1 = sound.channel1_8bit(t);
             var after = Math.max(0, Math.min(T-t, width));
             for (var x = 0; x < after; ++x) {
-                // XXX just channel 0 for now
-                var sample = (height / 256) * sound.channel0_8bit(t + x);
-                if (prevSample | sample) {
-                    var lo = Math.min(prevSample, sample);
-                    var hi = Math.max(prevSample, sample);
-                    for (var y = height-1 - hi; y <= height-1 - lo; ++y) {
-                        var p = 4 * (width * y + x);
-                        pixbuf[p] ^= 0xFF;
+                var sample0 = (height / 256) * sound.channel0_8bit(t + x);
+                var sample1 = (height / 256) * sound.channel1_8bit(t + x);
+                var ranges = unionRanges(prevSample0, sample0, prevSample1, sample1);
+                for (var r = 0; r < ranges.length; ++r) {
+                    var lo = ranges[r][0];
+                    var hi = ranges[r][1];
+                    if (lo | hi) {  // Skip all-zero segments
+                        for (var y = height-1 - hi; y <= height-1 - lo; ++y) {
+                            var p = 4 * (width * y + x);
+                            pixbuf[p] ^= 0xFF;
+                        }
                     }
                 }
-                prevSample = sample;
+                prevSample0 = sample0;
+                prevSample1 = sample1;
             }
+        }
+
+        // Return [[a_lo, a_hi], [b_lo, b_hi]] covering the same
+        // ranges but nonintersecting. [a0, a1] are endpoints of a
+        // range, not necessarily in order.
+        function unionRanges(a0, a1, b0, b1) {
+            var al = Math.min(a0, a1), ah = Math.max(a0, a1);
+            var bl = Math.min(b0, b1), bh = Math.max(b0, b1);
+            if (al < bl) {
+                if (bl < ah) bl = ah + 1;
+            } else {
+                if (al < bh) al = bh + 1;
+            }
+            return [[al, ah], [bl, bh]];
         }
 
         // A progress bar as a vertical line of translucency.
