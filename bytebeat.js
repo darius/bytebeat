@@ -64,6 +64,7 @@ function makeSound(composers, duration, rate, bytesPerSample) {
         duration: duration,
         rate: rate,
         nchannels: nchannels,
+        nsamples: nsamples,
         bytesPerSample: bytesPerSample,
         bytes: bytes,
         channel0_8bit: function(t) { 
@@ -117,7 +118,7 @@ function hexEncodeURI(values) {
 
 // Visualization
 
-var prev_t = null;
+var prev_t;
 
 function visualize(canvas, sound, audio) {
     // A dot for each sample (green/blue for channel 0/1).
@@ -133,33 +134,41 @@ function visualize(canvas, sound, audio) {
             }
         }
     });
-    if (audio)
-        vizStart(function() { updateViz(canvas, audio, sound); },
-                 33.33);
-    prev_t = null;
+    if (audio) {
+        function vizKickoff() { 
+            vizStart(function() { updateViz(canvas, audio, sound); },
+                     33.33);
+        }
+        prev_t = null;
+        audio.ontimeupdate = vizKickoff;
+        vizKickoff();   // ontimeupdate does nothing on some browsers.
+    }
 }
 
 var vizIntervalId;
+
+function vizStart(action, msecPerFrame) {
+    if (!vizIntervalId)
+        vizIntervalId = setInterval(action, msecPerFrame);
+}
 
 function vizStop() {
     if (vizIntervalId) clearInterval(vizIntervalId);
     vizIntervalId = 0;
 }
 
-function vizStart(drawNextFrame, msecPerFrame) {
-    vizStop();
-    vizIntervalId = setInterval(drawNextFrame, msecPerFrame);
-}
-
 function updateViz(canvas, audio, sound) {
+    var t = Math.round(audio.currentTime * sound.rate);
+    if (prev_t === t)
+        return;            // Player probably paused, don't waste CPU.
     var T = sound.duration * sound.rate;
+
     canvasUpdate(canvas, function(pixbuf, width, height) {
-        var t = Math.round(audio.currentTime * sound.rate);
-        if (prev_t === t)
-            return;
-        if (prev_t !== null)
+        if (prev_t !== null) {
             flip(prev_t);
-        if (sound.duration <= audio.currentTime + .001)
+            prev_t = null;
+        }
+        if (sound.nsamples <= t)
             vizStop();
         else
             flip(prev_t = t);
