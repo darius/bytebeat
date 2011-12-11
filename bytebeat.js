@@ -134,10 +134,21 @@ function visualize(canvas, sound, audio) {
         }
     });
     if (audio)
-        audio.ontimeupdate = function() {
-            updateViz(canvas, audio, sound);
-        };
+        vizStart(function() { updateViz(canvas, audio, sound); },
+                 33.33);
     prev_t = null;
+}
+
+var vizIntervalId;
+
+function vizStop() {
+    if (vizIntervalId) clearInterval(vizIntervalId);
+    vizIntervalId = 0;
+}
+
+function vizStart(drawNextFrame, msecPerFrame) {
+    vizStop();
+    vizIntervalId = setInterval(drawNextFrame, msecPerFrame);
 }
 
 function updateViz(canvas, audio, sound) {
@@ -145,8 +156,12 @@ function updateViz(canvas, audio, sound) {
     canvasUpdate(canvas, function(pixbuf, width, height) {
         if (prev_t !== null)
             flip(prev_t);
-        var t = audio.currentTime * sound.rate;
-        flip(t); prev_t = t;
+        if (sound.duration <= audio.currentTime)
+            vizStop();
+        else {
+            var t = Math.round(audio.currentTime * sound.rate);
+            flip(t); prev_t = t;
+        }
 
         function flip(t) {
             wave(t);
@@ -156,8 +171,8 @@ function updateViz(canvas, audio, sound) {
         // A red waveform for the next 'width' samples.
         function wave(t) {
             var prevSample = sound.channel0_8bit(t);
-            var after = Math.max(0, Math.min(T, width));
-            for (var x = 0; x < after; ++x) {
+            var after = Math.max(0, Math.min(T, width)); // XXX fixme
+              for (var x = 0; x < after; ++x) {
                 // XXX just channel 0 for now
                 var sample = (height / 256) * sound.channel0_8bit(t + x);
                 var lo = Math.min(prevSample, sample);
