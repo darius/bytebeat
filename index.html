@@ -2,7 +2,7 @@
   Play
   <input id="code0" type="text" size="40" value="t & t>>8"> and optionally
   <input id="code1" type="text" size="40" value=""><br>for
-  <input id="duration" type="text" size="2" value="25"> seconds at
+  <input id="duration" type="text" size="2" value="30"> seconds at
   <input name="samplerate" type="radio" value="8000" checked>8 kHz
   <input name="samplerate" type="radio" value="11025">11 kHz
   <input name="samplerate" type="radio" value="22050">22 kHz
@@ -128,6 +128,10 @@ function trim(string) {
     return string.replace(/^\s+|\s+$/g, '');
 }
 
+function updateTitle() {
+    document.title = 'bytebeat.js | ' + getTitle();
+}
+
 if (typeof(player.play) === 'undefined')
     alert("Your browser doesn't seem to support HTML5 audio. Sorry.");
 
@@ -149,6 +153,7 @@ function play() {
         showAudioVisual(makeSound(composers, seconds, rate, 1),
                         player, viz);
         updatePermalink();
+        updateTitle();
     } catch (err) {
         error.innerHTML = '' + err;
     }
@@ -162,5 +167,6 @@ function nonempty(field) {
 code0.focus();
 byId('play').onclick = play;
 updatePermalink();
+updateTitle();
 
 </script>
