@@ -19,7 +19,7 @@
 <p>
 <canvas id="viz" height="256" width="768"></canvas>
 <p id="error">
-<p>Once you've made a new tune, you can save or link to it: <a id="permalink">(click 'Hit it' first)</a>
+<p>Once you've made a new tune, you can save or link to it: <a id="permalink">Untitled</a>
 
 <hr>
   See <a href="http://canonical.org/~kragen/bytebeat/">Kragen Sitaker's
@@ -102,6 +102,12 @@ if (params.samplerate) setCheckedValue(samplerate, params.samplerate);
 if (params.notation)   setCheckedValue(notation, params.notation);
 if (params.title)      title.value = params.title;
 
+function updatePermalink() {
+    permalink.href = makePermalink();
+    permalink.replaceChild(document.createTextNode(getTitle()),
+                           permalink.childNodes[0]);
+}
+
 function makePermalink() {
     var params = {
         code0:      code0.value,
@@ -143,10 +149,7 @@ function play() {
 
         showAudioVisual(makeSound(composers, seconds, rate, 1),
                         player, viz);
-
-        permalink.href = makePermalink();
-        permalink.replaceChild(document.createTextNode(getTitle()),
-                               permalink.childNodes[0]);
+        updatePermalink();
     } catch (err) {
         error.innerHTML = '' + err;
     }
@@ -159,5 +162,6 @@ function nonempty(field) {
 
 code0.focus();
 byId('play').onclick = play;
+updatePermalink();
 
 </script>
