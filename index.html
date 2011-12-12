@@ -1,5 +1,5 @@
 <form id="form">
-  <input id="play" type="submit" value="Play"> 
+  Play
   <input id="code0" type="text" size="40" value="t & t>>8"> and optionally
   <input id="code1" type="text" size="40" value=""><br>for
   <input id="duration" type="text" size="2" value="25"> seconds at
@@ -10,15 +10,23 @@
   The expressions are in 
   <input name="notation" type="radio" value="JavaScript" checked>JavaScript
   <input name="notation" type="radio" value="RPN">RPN.
+  <br>Call this tune
+  <input id="title" type="text">.
+  <br>
+  <input id="play" type="submit" value="Hit it." style="width: 768px">
 </form>
 <audio id="player" autoplay="true" controls></audio>
 <p>
 <canvas id="viz" height="256" width="768"></canvas>
 <p id="error">
-<hr>By <a href="http://wry.me/blog">Darius</a>. See <a href="http://canonical.org/~kragen/bytebeat/">Kragen's
-  overview</a>. <a href="https://github.com/darius/bytebeat">Source
-  code</a> on github. Based
-  on <a href="http://www.bemmu.com/music/index.html">Bemmu and
+<p>Once you've made a new tune, you can save or link to it: <a id="permalink">(click 'Hit it' first)</a>
+
+<hr>
+  See <a href="http://canonical.org/~kragen/bytebeat/">Kragen Sitaker's
+  overview of bytebeat</a> for an idea of what to do with this web toy
+  by <a href="http://wry.me/blog">Darius Bacon</a>.
+  <a href="https://github.com/darius/bytebeat">Source code</a> on GitHub.
+  Based on <a href="http://www.bemmu.com/music/index.html">Bemmu and
   viznut's</a>
   and <a href="http://wurstcaptures.untergrund.net/music/">rarefluid's</a>.
 
@@ -26,6 +34,8 @@
 <script src="rpn.js"></script>
 <script>
 //'
+// Utilities for URLs & DOM, etc.
+
 function dbg(msg) {
     if (window.console)
 	console.log(msg);
@@ -33,13 +43,85 @@ function dbg(msg) {
 function byId(id) {
     return document.getElementById(id);
 }
+
+function decodeParams(url) {
+    var result = {};
+    var qmark = url.indexOf('?');
+    if (0 <= qmark) {
+        var pairs = url.substring(qmark+1, url.length).split('&');
+        for (var i = 0; i < pairs.length; ++i) {
+	    var kv = pairs[i].split('=', 2);
+	    result[decodeURIComponent(kv[0])] = decodeURIComponent(kv[1]);
+        }
+    }
+    return result;
+}
+
+function replaceParams(url, params) {
+    var encoded = [];
+    for (k in params)
+        if (params.hasOwnProperty(k))
+            encoded.push(encodeURIComponent(k)
+                         + '=' + encodeURIComponent(params[k]));
+    var qmark = url.indexOf('?');
+    var base = qmark < 0 ? url : url.substring(0, qmark);
+    return base + "?" + encoded.join('&');
+}
+
+function getCheckedValue(buttons) {
+    for (var i = 0; i < buttons.length; ++i)
+        if (buttons[i].checked)
+            return buttons[i].value;
+}
+
+function setCheckedValue(buttons, value) {
+    for (var i = 0; i < buttons.length; ++i)
+        if (buttons[i].value == value)
+            buttons[i].checked = true;
+}
+
+
+// Actual page logic
+
 var code0      = byId('code0');
 var code1      = byId('code1');
+var duration   = byId('duration');
 var samplerate = byId('form').samplerate;
-var notation  =  byId('form').notation;
+var notation   = byId('form').notation;
+var title      = byId('title');
 var player     = byId('player');
 var viz        = byId('viz');
 var error      = byId('error');
+var permalink  = byId('permalink');
+
+params = decodeParams(document.URL);
+if (params.code0)      code0.value = params.code0;
+if (params.code1)      code1.value = params.code1;
+if (params.duration)   duration.value = params.duration;
+if (params.samplerate) setCheckedValue(samplerate, params.samplerate);
+if (params.notation)   setCheckedValue(notation, params.notation);
+if (params.title)      title.value = params.title;
+
+function makePermalink() {
+    var params = {
+        code0:      code0.value,
+        code1:      code1.value,
+        duration:   duration.value,
+        samplerate: getCheckedValue(samplerate),
+        notation:   getCheckedValue(notation),
+        title:      title.value,
+    };
+    return replaceParams(document.URL, params);
+}
+
+function getTitle() {
+    var t = trim(title.value);
+    return t ? t : 'Untitled';
+}
+
+function trim(string) {
+    return string.replace(/^\s+|\s+$/g, '');
+}
 
 if (typeof(player.play) === 'undefined')
     alert("Your browser doesn't seem to support HTML5 audio. Sorry.");
@@ -54,13 +136,17 @@ function play() {
         var composers = [compileComposer(asJS(code0))];
         if (nonempty(code1)) composers.push(compileComposer(asJS(code1)));
 
-        var duration = parseFloat(byId('duration').value);
-        if (duration === 0) duration = 15;
+        var seconds = parseFloat(duration.value);
+        if (seconds === 0) seconds = 15;
 
         var rate = parseInt(getCheckedValue(samplerate));
 
-        showAudioVisual(makeSound(composers, duration, rate, 1),
+        showAudioVisual(makeSound(composers, seconds, rate, 1),
                         player, viz);
+
+        permalink.href = makePermalink();
+        permalink.replaceChild(document.createTextNode(getTitle()),
+                               permalink.childNodes[0]);
     } catch (err) {
         error.innerHTML = '' + err;
     }
@@ -69,12 +155,6 @@ function play() {
 
 function nonempty(field) {
     return field.value.match(/\S/);
-}
-
-function getCheckedValue(buttons) {
-    for (var i = 0; i < buttons.length; ++i)
-        if (buttons[i].checked)
-            return buttons[i].value;
 }
 
 code0.focus();
