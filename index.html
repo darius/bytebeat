@@ -121,8 +121,7 @@ function makePermalink() {
 }
 
 function getTitle() {
-    var t = trim(title.value);
-    return t ? t : 'Untitled';
+    return trim(title.value) || 'Untitled';
 }
 
 function trim(string) {
