@@ -160,7 +160,7 @@ function vizStop() {
 
 function updateViz(canvas, audio, sound) {
     var t = Math.round(audio.currentTime * sound.rate);
-    t = (t + 0xFF) & ~0xFF; // Keep the line from jumping around so randomly
+    t &= ~0xFF;            // Reduce the 'oscilloscope jitter'
     if (prev_t === t)
         return;            // Player probably paused, don't waste CPU.
     var T = sound.duration * sound.rate;
