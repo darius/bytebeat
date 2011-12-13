@@ -20,7 +20,8 @@
 <p>
 <canvas id="viz" height="256" width="938"></canvas>
 <p id="error" style="color: red">
-<p>Once you've made a new tune, you can save or link to it: <a id="permalink">Untitled</a>
+<p>Once you've made a new tune, you can save or link to it: <a id="permalink">Untitled</a>.
+<span id="elsewhere"><span>
 
 <hr>
   See <a href="http://canonical.org/~kragen/bytebeat/">Kragen Sitaker's
@@ -94,6 +95,7 @@ var player     = byId('player');
 var viz        = byId('viz');
 var error      = byId('error');
 var permalink  = byId('permalink');
+var elsewhere  = byId('elsewhere');
 
 params = decodeParams(document.URL);
 if (params.code0)      code0.value = params.code0;
@@ -107,6 +109,14 @@ function updatePermalink() {
     permalink.href = makePermalink();
     permalink.replaceChild(document.createTextNode(getTitle()),
                            permalink.childNodes[0]);
+    elsewhere.innerHTML = (
+        'Or play it at <a href="'
+            + replaceParams("http://wurstcaptures.untergrund.net/music/",
+                            {oneliner: code0.value,
+                             oneliner2: code1.value,
+                             duration: duration.value,
+                             rate: getCheckedValue(samplerate)})
+            + '">wurstcaptures</a>.');
 }
 
 function makePermalink() {
