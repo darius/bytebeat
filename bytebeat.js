@@ -160,7 +160,6 @@ function vizStop() {
 
 function updateViz(canvas, audio, sound) {
     var t = Math.round(audio.currentTime * sound.rate);
-    t &= ~0xFF;            // Reduce the 'oscilloscope jitter'
     if (prev_t === t)
         return;            // Player probably paused, don't waste CPU.
     var T = sound.duration * sound.rate;
@@ -176,6 +175,7 @@ function updateViz(canvas, audio, sound) {
             flip(prev_t = t);
 
         function flip(t) {
+            t &= ~0xFF;         // Reduce the 'oscilloscope jitter'
             wave(t);
             progress(t);
         }
@@ -189,7 +189,8 @@ function updateViz(canvas, audio, sound) {
             for (var x = 0; x < after; ++x) {
                 var sample0 = (height / 256) * sound.channel0_8bit(t + x);
                 var sample1 = (height / 256) * sound.channel1_8bit(t + x);
-                var ranges = unionRanges(prevSample0, sample0, prevSample1, sample1);
+                var ranges = unionRanges(prevSample0, sample0,
+                                         prevSample1, sample1);
                 for (var r = 0; r < ranges.length; ++r) {
                     var lo = ranges[r][0];
                     var hi = ranges[r][1];
