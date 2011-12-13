@@ -46,6 +46,8 @@ def format_row(formula, author, date, url, rate, rest):
     params = dict(code0=formula, title=title)
     if rate is not None:
         params['samplerate'] = str(rate)
+    if url is not None:
+        params['source'] = url
     return ('<a href="http://wry.me/toys/bytebeat/?%s">%s</a>'
             % (urllib.urlencode(params),
                cgi.escape(title)))
