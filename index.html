@@ -22,7 +22,8 @@
 <canvas id="viz" height="256" width="938"></canvas>
 <p id="error" style="color: red">
 <p>Once you've made a new tune, you can save or link to it: <a id="permalink">Untitled</a>.
-<span id="elsewhere"><span>
+<span id="elsewhere"></span>
+<span id="source"></span>
 
 <hr>
   Try some <a href="examples.html">examples</a>.
@@ -99,6 +100,7 @@ var viz        = byId('viz');
 var error      = byId('error');
 var permalink  = byId('permalink');
 var elsewhere  = byId('elsewhere');
+var source     = byId('source');
 
 params = decodeParams(document.URL);
 if (params.code0)      code0.value = params.code0;
@@ -107,6 +109,13 @@ if (params.duration)   duration.value = params.duration;
 if (params.samplerate) setCheckedValue(samplerate, params.samplerate);
 if (params.notation)   setCheckedValue(notation, params.notation);
 if (params.title)      title.value = params.title;
+if (params.source) {
+    source.innerHTML =
+ 'This tune is said to be from <a id="sourcehref" rel="nofollow">here</a>.';
+    // Setting the href separately to avoid XSS issues (I hope) --
+    // presumably there's a better way:
+    byId('sourcehref').href = params.source;
+}
 
 function updatePermalink() {
     permalink.href = makePermalink();
