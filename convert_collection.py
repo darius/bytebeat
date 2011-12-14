@@ -4,8 +4,8 @@ def main():
     print """This is an automated markup of the <a
 href="http://pelulamu.net/countercomplex/music_formula_collection.txt">
 collection of oneliner music formulas</a> version 2011-10-18,
-apparently by viznut, Converted by <code>convert_collection.py</code>
-at <a href="https://github.com/darius/bytebeat">https://github.com/darius/bytebeat</a>.
+by viznut, Converted by <code>convert_collection.py</code> at
+<a href="https://github.com/darius/bytebeat">https://github.com/darius/bytebeat</a>.
 The conversion is bound to have got some things wrong: e.g. the one
 stereo entry is certainly broken because I haven't coded a converter
 for that case.  '"""
@@ -49,9 +49,13 @@ def format_row(formula, author, date, url, rate, rest):
     if url is not None:
         params['source'] = url
     return ('<a href="http://wry.me/toys/bytebeat/?%s">%s</a>'
-            % (urllib.urlencode(params),
-               cgi.escape(title)))
+            % (my_urlencode(params), cgi.escape(title)))
 
+def my_urlencode(params):
+    def quote(x):
+        return urllib.quote(x, safe='')
+    return '&'.join('%s=%s' % (quote(k), quote(v))
+                    for k, v in params.items())
 
 def chunk_input():
     return chunkify(skip_head(text.splitlines()))
