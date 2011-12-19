@@ -28,6 +28,9 @@
 <hr>
   Try some <a href="examples.html">examples</a>.
 
+  In RPN mode, <a href="http://madgarden.net/apps/glitch-machine/">Glitch Machine</a>
+  expressions should work. For example, <code>t 10 >> 42 * t * </code>.
+
   <p>See <a href="http://canonical.org/~kragen/bytebeat/">Kragen Sitaker's
   overview of bytebeat</a> for an idea of what to do with this web toy
   by <a href="http://wry.me/blog">Darius Bacon</a>.
@@ -122,13 +125,15 @@ function updatePermalink() {
     permalink.replaceChild(document.createTextNode(getTitle()),
                            permalink.childNodes[0]);
     elsewhere.innerHTML = (
-        'Or play it at <a href="'
+        getCheckedValue(notation) === 'JavaScript'
+        ? 'Or play it at <a href="'
             + replaceParams("http://wurstcaptures.untergrund.net/music/",
                             {oneliner: code0.value,
                              oneliner2: code1.value,
                              duration: duration.value,
                              rate: getCheckedValue(samplerate)})
-            + '">wurstcaptures</a>.');
+            + '">wurstcaptures</a>.'
+        : '');
 }
 
 function makePermalink() {
