@@ -1,12 +1,37 @@
 function jsFromRPN(string) {
+    try {
+        return jsFromRPNSource(string);
+    } catch (err) {
+        return jsFromURI(string);
+    }
+}
+
+function jsFromRPNSource(string) {
     return translate(string.match(/\S+/g));
 
     function translate(tokens) {
         var stack = makeCyclicStack();
         for (var i = 0; i < tokens.length; ++i)
-            simulate(tokens[i], stack);
+            simulate(tokens[i], opTable, stack);
         return stack.compile();
     }
+}
+
+function jsFromURI(string) {
+    var stack = makeCyclicStack();
+    var chars = string.substr(string.search(/!/) + 1).split('');
+    for (var i = 0; i < chars.length; ) {
+        var literal = '';
+        while (i < chars.length && chars[i].match(/[0123456789ABCDEF]/))
+            literal += chars[i++];
+        if (literal !== '')
+            stack.push(parseInt(literal, 16));
+        else if (chars[i] === '.' || chars[i] === '!')
+            ++i;
+        else
+            simulate(chars[i++], shortOpTable, stack);
+    }
+    return stack.compile();
 }
 
 function makeCyclicStack() {
@@ -43,9 +68,9 @@ function makeCyclicStack() {
     };
 }
 
-function simulate(op, stack) {
-    if (opTable[op])
-        opTable[op](stack);
+function simulate(op, table, stack) {
+    if (table[op])
+        table[op](stack);
     else if (!isNaN(op))
         stack.push(0xFFFFFFFF & op);  // It's a number
     else
@@ -132,7 +157,34 @@ var opTable = {
         stack.push(y);
     },
 
-    '>':  infixRel('>'),
-    '<':  infixRel('<'),
+    '>': infixRel('>'),
+    '<': infixRel('<'),
     '=': infixRel('==='),
+};
+
+https://github.com/erlehmann/libglitch/blob/master/FORMAT-draft-erlehmann
+var shortOpTable = {
+    'a': opTable['t'],
+    'c': opTable['drop'],
+
+    'd': opTable['*'],
+    'e': opTable['/'],
+    'f': opTable['+'],
+    'g': opTable['-'],
+    'h': opTable['%'],
+
+    'j': opTable['<<'],
+    'k': opTable['>>'],
+    'l': opTable['&'],
+    'm': opTable['|'],
+    'n': opTable['^'],
+    'o': opTable['~'],
+
+    'p': opTable['dup'],
+    'q': opTable['pick'],
+    'r': opTable['swap'],
+
+    's': opTable['<'],
+    't': opTable['>'],
+    'u': opTable['='],
 };
