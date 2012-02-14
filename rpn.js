@@ -1,3 +1,5 @@
+"use strict";
+
 function jsFromRPN(string) {
     try {
         return jsFromRPNSource(string);
@@ -40,7 +42,7 @@ function makeCyclicStack() {
     var sp = -1;
 
     function S() { 
-        return 'S[' + (sp & mask) + ']';
+        return 'this.S[' + (sp & mask) + ']';
     }
     function pop() {
         var result = S();
@@ -49,19 +51,17 @@ function makeCyclicStack() {
     }
     function push(expr) {
         ++sp;
-        stmts.push(S() + ' = ' + expr + ';');
+        stmts.push(S() + ' = ' + expr + ',');
     }
     return {
         compile: function() {
             if (sp < 0)
                 return '0';
-            return ('(function() { '
-                    + 'var S = new Array(256); '
-                    + stmts.concat('return ' + pop() + ';').join(' ')
-                    + ' })()');
+            return ('((this.S ? 0 : this.S = new Array(256)), '
+                    + stmts.concat(pop() + ')').join(' '));
         },
         pick: function() {
-            push('S[(' + (sp-1) + '-' + pop() + ')&' + mask + ']');
+            push('this.S[(' + (sp-1) + '-' + pop() + ')&' + mask + ']');
         },
         push: push,
         pop: pop,
@@ -83,8 +83,10 @@ function literalOp(op) {
     };
 }
 
+// XXX use e|0 or e>>>0, depending on if we want signed or unsigned
+
 function masked(e) {
-    return '0xFFFFFFFF & (' + e + ')';
+    return '(' + e + ')>>>0';
 }
 function unmasked(e) {
     return '(' + e + ')';
@@ -125,18 +127,18 @@ var opTable = {
     '/': function(stack) {
         var z = stack.pop();
         var y = stack.pop();
-        stack.push('(' + z + '?0xFFFFFFFF&(' + y+'/'+z + '):0)');
+        stack.push('(' + z + '?(' + y+'/'+z + ')>>>0:0)');
     },
     '+': infixOp('+', masked),
     '-': infixOp('-', masked),
     '%': function(stack) {
         var z = stack.pop();
         var y = stack.pop();
-        stack.push('(' + z + '?0xFFFFFFFF&(' + y+'%'+z + '):0)');
+        stack.push('(' + z + '?(' + y+'%'+z + ')>>>0:0)');
     },
 
-    '<<': infixOp('<<', unmasked), // XXX right?
-    '>>': infixOp('>>', unmasked),
+    '<<': infixOp('<<', unmasked),  // XXX JS only looks at low 5 bits of count
+    '>>': infixOp('>>>', unmasked), // XXX JS only looks at low 5 bits of count
     '&': infixOp('&', unmasked),
     '|': infixOp('|', unmasked),
     '^': infixOp('^', unmasked),
