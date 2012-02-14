@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html><body>
 <form id="form">
   Play
   <input id="code0" type="text" size="40" value="t & t>>8"> and optionally
@@ -45,6 +47,7 @@
 <script src="bytebeat.js"></script>
 <script src="rpn.js"></script>
 <script>
+//'use strict';
 //'
 // Utilities for URLs & DOM, etc.
 
@@ -71,7 +74,7 @@ function decodeParams(url) {
 
 function replaceParams(url, params) {
     var encoded = [];
-    for (k in params)
+    for (var k in params)
         if (params.hasOwnProperty(k))
             encoded.push(encodeURIComponent(k)
                          + '=' + encodeURIComponent(params[k]));
@@ -108,7 +111,7 @@ var permalink  = byId('permalink');
 var elsewhere  = byId('elsewhere');
 var source     = byId('source');
 
-params = decodeParams(document.URL);
+var params = decodeParams(document.URL);
 if (params.code0)      code0.value = params.code0;
 if (params.code1)      code1.value = params.code1;
 if (params.duration)   duration.value = params.duration;
@@ -201,3 +204,4 @@ updatePermalink();
 updateTitle();
 
 </script>
+</body></html>
