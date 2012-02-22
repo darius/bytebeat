@@ -54,11 +54,15 @@ function ast_to_js_(ast, parentPrecedence, leftOrRight) {
     , body = [ ast_to_js_(ast[0], precedence, 'left')
              , op
              , ast_to_js_(ast[2], precedence, 'right')
-             ].join(' ')
+             ]
+             .join(' ')
 
   if (precedence < parentPrecedence) return body
-  // XXX handle associativity
 
+  // All operators we currently handle associate left-to-right.
+  if (precedence === parentPrecedence && leftOrRight === 'left') return body
+
+  // Parenthesize because parent operator has tighter precedence.
   return '(' + body + ')'
 }
 
@@ -67,7 +71,7 @@ function binaryPrecedence(op) {
   var precedence = [ [ '.', '[]', 'new' ]
                    , [ '()' ]
                    , [ '++', '--' ]
-                   , [ ]        // unary operators omitted
+                   , [ ]        // unary operators omitted because of conflict
                    , [ '*', '/', '%' ]
                    , [ '+', '-' ]
                    , [ '<<', '>>', '>>>' ]
@@ -78,9 +82,13 @@ function binaryPrecedence(op) {
                    , [ '|' ]
                    , [ '&&' ]
                    , [ '||' ]
-                   , [ '' ]
-                   , [ '=', '+=', '-=', '*=', '/=', '%=', '>>=', '<<='
-                     , '>>>=', '&=', '^=', '|=' ]
+                   , [ ]     // '?:'
+                   , [
+                     // Assignment operators omitted because:
+                     // 1. They don’t exist in glitch:// URLs
+                     // 2. They associate right-to-left, unlike all
+                     //    the operators we actually handle.
+                     ]
                    , [ ',' ]
                    ]
 
@@ -93,5 +101,7 @@ function binaryPrecedence(op) {
 function test() {
   assert.equal(ast_to_js('t'), 't')
   assert.equal(ast_to_js(['t', '^', 34]), 't ^ 34')
+  assert.equal(ast_to_js([['t', '*', 4], '%', 128]), 't * 4 % 128')
+  assert.equal(ast_to_js(['t', '*', [4, '%', 128]]), 't * (4 % 128)')
   assert.equal(infix_of(starlost), starlost_infix)
 }
