@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<head>
+  <title>Sawtooth</title>
+</head>
+<body>
+  The simplest audible program is
+  <form id="form">
+    <input id="code0" type="text" size="40" value="t">
+    <input id="play" type="submit" value="Play it">
+  </form>
+  <audio id="player" autoplay="true" controls></audio>
+  <p>
+    <canvas id="viz" height="256" width="938"></canvas>
+  <p id="error" style="color: red"> 
+  <p>Try doubling the frequency.
+  </p>
+  <script src="../bytebeat.js"></script>
+  <script>
+
+//'use strict';
+// Utilities for URLs & DOM, etc.
+
+function dbg(msg) {
+    if (window.console)
+	console.log(msg);
+}
+function byId(id) {
+    return document.getElementById(id);
+}
+
+
+// Actual page logic
+
+var code0      = byId('code0');
+var player     = byId('player');
+var viz        = byId('viz');
+var error      = byId('error');
+
+if (typeof(player.play) === 'undefined')
+    alert("Your browser doesn't seem to support HTML5 audio. Sorry.");
+
+function play() {
+    error.innerHTML = '';
+    try {
+        var composers = [compileComposer(code0.value)];
+        var seconds = 30;
+        var rate = 8000;
+        showAudioVisual(makeSound(composers, seconds, rate, 1),
+                        player, viz);
+    } catch (err) {
+        error.innerHTML = '' + err;
+    }
+    return false;
+}
+
+function nonempty(field) {
+    return field.value.match(/\S/);
+}
+
+code0.focus();
+byId('play').onclick = play;
+
+  </script>
+</body>

@@ -1,3 +1,5 @@
+//"use strict";
+
 function showAudioVisual(sound, player, viz) {
     player.src = makeAudioURI(sound);
     visualize(viz, sound, player);
