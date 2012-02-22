@@ -6,7 +6,7 @@ var assert = require('assert')
   , starlost_infix = '(t % 255 ^ t % 511) * 3'
 
 test()
-puts(infix_of(octo))
+sys.puts(infix_of(octo))
 
 function infix_of(glitch_url) {
   var stack = []
@@ -18,8 +18,13 @@ function infix_of(glitch_url) {
       }
     , ops = { a: function() { push('t') }
             , d: binop('*')
+            , e: binop('/')     // XXX division by zero
+            , f: binop('+')
+            , g: binop('-')
             , h: binop('%')
+            , k: binop('>>>')
             , n: binop('^')
+            , m: binop('|')
             }
 
   // Iterate over the tokens using the string replace method.
@@ -52,6 +57,7 @@ function ast_to_js_(ast, parentPrecedence, leftOrRight) {
              ].join(' ')
 
   if (precedence < parentPrecedence) return body
+  // XXX handle associativity
 
   return '(' + body + ')'
 }
