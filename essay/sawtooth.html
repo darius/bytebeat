@@ -10,6 +10,7 @@
   <form id="form">
     <input id="code0" type="text" size="40" value="t">
     <input id="play" type="submit" value="Play it">
+    <input id="reset" type="submit" value="Reset">
   </form>
   <audio id="player" autoplay="true" controls></audio>
   <p>
@@ -42,6 +43,10 @@ var error      = byId('error');
 if (typeof(player.play) === 'undefined')
     alert("Your browser doesn't seem to support HTML5 audio. Sorry.");
 
+function reset() {
+    code0.value = "t";
+}
+
 function play() {
     error.innerHTML = '';
     try {
@@ -62,6 +67,7 @@ function nonempty(field) {
 
 code0.focus();
 byId('play').onclick = play;
+byId('reset').onclick = reset;
 
   </script>
 </body>
