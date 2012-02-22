@@ -61,10 +61,6 @@ function play() {
     return false;
 }
 
-function nonempty(field) {
-    return field.value.match(/\S/);
-}
-
 code0.focus();
 byId('play').onclick = play;
 byId('reset').onclick = reset;
