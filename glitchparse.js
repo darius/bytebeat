@@ -1,14 +1,7 @@
-#!/usr/local/bin/node
-var assert = require('assert')
-  , sys = require('sys')
-  , starlost = 'glitch://starlost!aFFha1FFhn3d'
-  , octo = 'glitch://octo!a2k14had!a2000he!a8!a11k3h1fde!m!aEk7Fhn!20g'
-  , starlost_infix = '(t % 255 ^ t % 511) * 3'
+glitchparse = {}
+if (typeof exports !== 'undefined') glitchparse = exports
 
-test()
-sys.puts(infix_of(octo))
-
-function infix_of(glitch_url) {
+glitchparse.infix_of = function(glitch_url) {
   var stack = []
     , contents = /^glitch:\/\/[^!]*!(.*)/.exec(glitch_url)
     , push = function(x) { stack.push(x) }
@@ -35,23 +28,23 @@ function infix_of(glitch_url) {
     return push(parseInt(op, 16))
   })
 
-  return ast_to_js(pop())
+  return glitchparse.ast_to_js(pop())
 }
 
-function ast_to_js(ast) {
+glitchparse.ast_to_js = function(ast) {
   var reallyBigNumber = 100
-  return ast_to_js_(ast, reallyBigNumber, undefined)
+  return glitchparse.ast_to_js_(ast, reallyBigNumber, undefined)
 }
 
-function ast_to_js_(ast, parentPrecedence, leftOrRight) {
+glitchparse.ast_to_js_ = function(ast, parentPrecedence, leftOrRight) {
   if (typeof ast === 'string' || typeof ast === 'number') return ast
 
   // binop case
   var op = ast[1]
-    , precedence = binaryPrecedence(ast[1])
-    , body = [ ast_to_js_(ast[0], precedence, 'left')
+    , precedence = glitchparse.binaryPrecedence(ast[1])
+    , body = [ glitchparse.ast_to_js_(ast[0], precedence, 'left')
              , op
-             , ast_to_js_(ast[2], precedence, 'right')
+             , glitchparse.ast_to_js_(ast[2], precedence, 'right')
              ]
              .join(' ')
 
@@ -64,7 +57,7 @@ function ast_to_js_(ast, parentPrecedence, leftOrRight) {
   return '(' + body + ')'
 }
 
-function binaryPrecedence(op) {
+glitchparse.binaryPrecedence = function(op) {
   // <https://developer.mozilla.org/en/JavaScript/Reference/Operators/Operator_Precedence>
   var precedence = [ [ '.', '[]', 'new' ]
                    , [ '()' ]
@@ -96,10 +89,18 @@ function binaryPrecedence(op) {
 }
 
 
-function test() {
+glitchparse.test = function() {
+  var starlost = 'glitch://starlost!aFFha1FFhn3d'
+    , starlost_infix = '(t % 255 ^ t % 511) * 3'
+    , assert = require('assert')
+    , ast_to_js = glitchparse.ast_to_js
+    , infix_of = glitchparse.infix_of
+
   assert.equal(ast_to_js('t'), 't')
   assert.equal(ast_to_js(['t', '^', 34]), 't ^ 34')
   assert.equal(ast_to_js([['t', '*', 4], '%', 128]), 't * 4 % 128')
   assert.equal(ast_to_js(['t', '*', [4, '%', 128]]), 't * (4 % 128)')
   assert.equal(infix_of(starlost), starlost_infix)
 }
+
+glitchparse.test()
