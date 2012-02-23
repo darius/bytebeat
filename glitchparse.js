@@ -1,3 +1,41 @@
+/*
+ * Convert glitch:// URLs from glitched and GlitchMachine into infix JS.
+ *
+ * Remaining problems:
+ * I haven’t yet implemented PUT DROP LSHIFT NOT PICK < > == (bcjoqstu).
+ *
+ * Of those, PUT and PICK are very tricky. < > == are moderately
+ * tricky.
+ *
+ * Division isn’t quite right.  glitch:// division by zero generates
+ * 0, either via / or %.  JS generates NaN.  The difference is only
+ * relevant if the value is then transformed in a way that would cause
+ * a 0 division result to generate a non-zero sample, and not always
+ * even then.
+ *
+ * Worse, division generates fractions in JS, while glitch:// is
+ * all-unsigned-32-bit-values.  The difference in this case is only
+ * relevant if there’s a path for those fractional bits to make their
+ * way into the output.  Any bitwise operation will discard them, and
+ * most arithmetic operations merely preserve them: addition and
+ * subtraction of integers, division by numbers greater than 1, and
+ * multiplication by numbers between -1 and 1.  The only way for those
+ * fractional bits to escape and cause havoc is addition or subtraction
+ * of another number with fractional bits, division by a number less than
+ * 1, or multiplication by a number greater than 1.  In those cases, the
+ * division result can be explicitly truncated using ~~, if it matters.
+ * Annotating parse tree nodes to keep track of which ones have possible
+ * fractional parts would be sufficient to avoid the majority of these
+ * cases, since division results are most commonly fed immediately to
+ * a bitwise operator.
+ *
+ * Glitchparse doesn’t always take advantage of associativity of
+ * associative operators to avoid unnecessary parens.  For example,
+ * glitch://cube!aadad is correctly translated to t * t * t, but the
+ * exactly equivalent glitch://cube!aaadd is translated to t * (t * t),
+ * with superfluous parentheses.
+ */
+
 glitchparse = {}
 if (typeof exports !== 'undefined') glitchparse = exports
 
@@ -20,16 +58,20 @@ glitchparse.infix_of = function(glitch_url) {
       }
     , ops = { a: function() { push('t') }
             , d: binop('*')
-            , e: binop('/')     // XXX division by zero should give 0
+              // XXX There are two big problems with division.  First,
+              // glitch:// division and modulo yield 0 on division by
+              // zero, not NaN.  Second, JS division doesn’t truncate;
+              // it yields fractions.
+            , e: binop('/')
             , f: binop('+')
             , g: binop('-')
             , h: binop('%')
             , k: binop('>>>')
             , l: binop('&')
+            , m: binop('|')
             , n: binop('^')
             , p: function() { var v = defineVar(pop()); push(v); push(v) }
             , r: function() { var a = pop(); var b = pop(); push(a); push(b) }
-            , m: binop('|')
             }
 
   if (!contents) throw Error("Can't parse " + glitch_url)
@@ -42,11 +84,13 @@ glitchparse.infix_of = function(glitch_url) {
     return push(parseInt(op, 16))
   })
 
+  if (stack.length !== 1) throw Error("Multiple things left on stack")
   seqExpressions.push(glitchparse.ast_to_js(pop()))
   return seqExpressions.join(', ')
 }
 
 glitchparse.ast_to_js = function(ast) {
+  //console.log(require('sys').inspect(ast, 0, 20))
   var reallyBigNumber = 100
   return glitchparse.ast_to_js_(ast, reallyBigNumber, undefined)
 }
