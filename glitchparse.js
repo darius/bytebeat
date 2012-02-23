@@ -27,7 +27,8 @@
  * Annotating parse tree nodes to keep track of which ones have possible
  * fractional parts would be sufficient to avoid the majority of these
  * cases, since division results are most commonly fed immediately to
- * a bitwise operator.
+ * a bitwise operator.  glitch://martians!a64d!a80e64h1fe!a6km is a
+ * case where this matters a great deal, although I’m not sure why.
  *
  * Glitchparse doesn’t always take advantage of associativity of
  * associative operators to avoid unnecessary parens.  For example,
