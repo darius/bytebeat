@@ -1,0 +1,23 @@
+/* glitch:// URL: <!-- -*- js3 -*- -->
+<input id="g" value="glitch://octo!a2k14had!a2000he!a8!a11k3h1fde!m!aEk7Fhn!20g" />
+<button onclick="go()">Convert!</button>
+<div id="x"></div>
+<script>
+// */ The above is in a JS comment to enable editing this file in js3-mode.
+function $(id) { return document.getElementById(id) }
+function go() {
+  var x = $('x')
+    , g = $('g')
+    , t = g.value
+
+  try {
+    var output = glitchparse.infix_of(t)
+  } catch (e) {
+    alert(e)
+    return
+  }
+
+  while (x.firstChild) x.removeChild(x.firstChild)
+  x.appendChild(document.createTextNode(output))
+}
+// </script><script src="glitchparse.js"></script>
