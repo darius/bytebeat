@@ -32,6 +32,8 @@ glitchparse.infix_of = function(glitch_url) {
             , m: binop('|')
             }
 
+  if (!contents) throw Error("Can't parse " + glitch_url)
+
   // Iterate over the tokens using the string replace method.
   // XXX would be nice to notice unhandled data!
   contents[1].replace(/[0-9A-F]+|[a-u!.]/g, function(op) {
@@ -51,6 +53,8 @@ glitchparse.ast_to_js = function(ast) {
 
 glitchparse.ast_to_js_ = function(ast, parentPrecedence, leftOrRight) {
   if (typeof ast === 'string' || typeof ast === 'number') return ast
+
+  if (typeof ast === 'undefined') throw Error("Stack underflow!")
 
   // Binop case.  So far we don’t have unary operators.
   var op = ast[1]
