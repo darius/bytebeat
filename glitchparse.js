@@ -14,11 +14,11 @@ function infix_of(glitch_url) {
     , push = function(x) { stack.push(x) }
     , pop = function() { return stack.pop() }
     , binop = function(op) {
-        return function() {var b = pop(); push([pop(), op, b]) }
+        return function() { var b = pop(); push([pop(), op, b]) }
       }
     , ops = { a: function() { push('t') }
             , d: binop('*')
-            , e: binop('/')     // XXX division by zero
+            , e: binop('/')     // XXX division by zero should give 0
             , f: binop('+')
             , g: binop('-')
             , h: binop('%')
@@ -28,16 +28,14 @@ function infix_of(glitch_url) {
             }
 
   // Iterate over the tokens using the string replace method.
+  // XXX would be nice to notice unhandled data!
   contents[1].replace(/[0-9A-F]+|[a-u]|!/g, function(op) {
-    //console.log([op, stack])
     if (/[a-u]/.test(op)) return ops[op]()
     if (op === '!') return
     return push(parseInt(op, 16))
   })
 
-  var ast = pop()
-
-  return ast_to_js(ast)
+  return ast_to_js(pop())
 }
 
 function ast_to_js(ast) {
