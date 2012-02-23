@@ -2,10 +2,10 @@
  * Convert glitch:// URLs from glitched and GlitchMachine into infix JS.
  *
  * Remaining problems:
- * I haven’t yet implemented PUT DROP LSHIFT NOT PICK < > == (bcjoqstu).
+ * I haven’t yet implemented PUT DROP LSHIFT PICK < > == (bcjoqstu).
  *
  * Of those, PUT and PICK are very tricky. < > == are moderately
- * tricky.
+ * tricky.  LSHIFT is easy; I don’t know why I haven’t seen it in use.
  *
  * Division isn’t quite right.  glitch:// division by zero generates
  * 0, either via / or %.  JS generates NaN.  The difference is only
@@ -66,6 +66,7 @@ glitchparse.infix_of = function(glitch_url) {
             , l: binop('&')
             , m: binop('|')
             , n: binop('^')
+            , o: function() { push(['~', pop()]) }
             , p: function() { var v = defineVar(pop()); push(v); push(v) }
             , r: function() { var a = pop(); var b = pop(); push(a); push(b) }
             }
@@ -80,7 +81,6 @@ glitchparse.infix_of = function(glitch_url) {
     return push(parseInt(op, 16))
   })
 
-  if (stack.length !== 1) throw Error("Multiple things left on stack")
   seqExpressions.push(glitchparse.ast_to_js(pop()))
   return seqExpressions.join(', ')
 }
@@ -96,7 +96,12 @@ glitchparse.ast_to_js_ = function(ast, parentPrecedence, leftOrRight) {
 
   if (typeof ast === 'undefined') throw Error("Stack underflow!")
 
-  // Binop case.  So far we don’t have unary operators.
+  if (ast.length === 2) {
+    // The unary operators would be at item 3 in the precedence list.
+    return ast[0] + glitchparse.ast_to_js_(ast[1], 3, 'right')
+  }
+
+  // Binop case.
   var op = ast[1]
     , precedence = glitchparse.binaryPrecedence(ast[1])
     , body = [ glitchparse.ast_to_js_(ast[0], precedence, 'left')
@@ -157,7 +162,14 @@ glitchparse.test = function() {
   assert.equal(ast_to_js(['t', '^', 34]), 't ^ 34')
   assert.equal(ast_to_js([['t', '*', 4], '%', 128]), 't * 4 % 128')
   assert.equal(ast_to_js(['t', '*', [4, '%', 128]]), 't * (4 % 128)')
+  assert.equal(ast_to_js(['~', ['t', '*', 4]]), '~(t * 4)')
   assert.equal(infix_of(starlost), starlost_infix)
+  assert.equal(infix_of(
+    'glitch://pickled_glitches!aa7D00e6h25Cfhao25Chlp!a40hl!a25De80h80fd'
+  ),
+  'a = t % (t / 32000 % 6 + 604) & ~t % 604, ' +
+               '(a & t % 64) * (t / 605 % 128 + 128)'
+              )
 }
 
 glitchparse.test()
