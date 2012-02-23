@@ -111,6 +111,19 @@ var permalink  = byId('permalink');
 var elsewhere  = byId('elsewhere');
 var source     = byId('source');
 
+function getFormValues() {
+    return {
+        code0:      code0.value,
+        code1:      code1.value,
+        duration:   duration.value,
+        samplerate: getCheckedValue(samplerate),
+        notation:   getCheckedValue(notation),
+        title:      title.value,
+    };
+}
+
+var defaults = getFormValues();
+
 var params = decodeParams(document.URL);
 if (params.code0)      code0.value = params.code0;
 if (params.code1)      code1.value = params.code1;
@@ -143,15 +156,18 @@ function updatePermalink() {
 }
 
 function makePermalink() {
-    var params = {
-        code0:      code0.value,
-        code1:      code1.value,
-        duration:   duration.value,
-        samplerate: getCheckedValue(samplerate),
-        notation:   getCheckedValue(notation),
-        title:      title.value,
-    };
-    return replaceParams(document.URL, params);
+    return replaceParams(document.URL, keepChanges(defaults, getFormValues()));
+}
+
+// Return an object with those properties of obj that aren't the same
+// in ref.
+function keepChanges(ref, obj) {
+    var result = {};
+    for (var k in obj)
+        if (obj.hasOwnProperty(k))
+            if (ref[k] !== obj[k])
+                result[k] = obj[k];
+    return result;
 }
 
 function getTitle() {
