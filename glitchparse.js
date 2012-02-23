@@ -16,6 +16,7 @@ glitchparse.infix_of = function(glitch_url) {
             , g: binop('-')
             , h: binop('%')
             , k: binop('>>>')
+            , l: binop('&')
             , n: binop('^')
             , m: binop('|')
             }
