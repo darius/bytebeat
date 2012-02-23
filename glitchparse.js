@@ -18,14 +18,17 @@ glitchparse.infix_of = function(glitch_url) {
             , k: binop('>>>')
             , l: binop('&')
             , n: binop('^')
+              // XXX this is clearly undesirable; DUP should create a
+              // new variable using the comma operator!
+            , p: function() { var a = pop(); push(a); push(a) }
             , m: binop('|')
             }
 
   // Iterate over the tokens using the string replace method.
   // XXX would be nice to notice unhandled data!
-  contents[1].replace(/[0-9A-F]+|[a-u]|!/g, function(op) {
+  contents[1].replace(/[0-9A-F]+|[a-u!.]/g, function(op) {
     if (/[a-u]/.test(op)) return ops[op]()
-    if (op === '!') return
+    if (op === '!' || op === '.' ) return
     return push(parseInt(op, 16))
   })
 
