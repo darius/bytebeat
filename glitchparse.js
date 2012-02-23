@@ -58,11 +58,7 @@ glitchparse.infix_of = function(glitch_url) {
       }
     , ops = { a: function() { push('t') }
             , d: binop('*')
-              // XXX There are two big problems with division.  First,
-              // glitch:// division and modulo yield 0 on division by
-              // zero, not NaN.  Second, JS division doesn’t truncate;
-              // it yields fractions.
-            , e: binop('/')
+            , e: binop('/')     // XXX see comment at top of file
             , f: binop('+')
             , g: binop('-')
             , h: binop('%')
