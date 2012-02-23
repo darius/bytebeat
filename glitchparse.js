@@ -28,6 +28,7 @@ glitchparse.infix_of = function(glitch_url) {
             , l: binop('&')
             , n: binop('^')
             , p: function() { var v = defineVar(pop()); push(v); push(v) }
+            , r: function() { var a = pop(); var b = pop(); push(a); push(b) }
             , m: binop('|')
             }
 
@@ -51,7 +52,7 @@ glitchparse.ast_to_js = function(ast) {
 glitchparse.ast_to_js_ = function(ast, parentPrecedence, leftOrRight) {
   if (typeof ast === 'string' || typeof ast === 'number') return ast
 
-  // binop case
+  // Binop case.  So far we don’t have unary operators.
   var op = ast[1]
     , precedence = glitchparse.binaryPrecedence(ast[1])
     , body = [ glitchparse.ast_to_js_(ast[0], precedence, 'left')
