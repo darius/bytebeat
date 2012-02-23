@@ -9,6 +9,15 @@ glitchparse.infix_of = function(glitch_url) {
     , binop = function(op) {
         return function() { var b = pop(); push([pop(), op, b]) }
       }
+    , nextVar = 'a'
+    , seqExpressions = []
+    , defineVar = function(expr) {
+        var varName = nextVar
+        nextVar = String.fromCharCode(nextVar.charCodeAt(0) + 1)
+        // XXX handle more than a few vars by changing name!
+        seqExpressions.push(varName + ' = ' + glitchparse.ast_to_js(expr))
+        return varName
+      }
     , ops = { a: function() { push('t') }
             , d: binop('*')
             , e: binop('/')     // XXX division by zero should give 0
@@ -18,9 +27,7 @@ glitchparse.infix_of = function(glitch_url) {
             , k: binop('>>>')
             , l: binop('&')
             , n: binop('^')
-              // XXX this is clearly undesirable; DUP should create a
-              // new variable using the comma operator!
-            , p: function() { var a = pop(); push(a); push(a) }
+            , p: function() { var v = defineVar(pop()); push(v); push(v) }
             , m: binop('|')
             }
 
@@ -32,7 +39,8 @@ glitchparse.infix_of = function(glitch_url) {
     return push(parseInt(op, 16))
   })
 
-  return glitchparse.ast_to_js(pop())
+  seqExpressions.push(glitchparse.ast_to_js(pop()))
+  return seqExpressions.join(', ')
 }
 
 glitchparse.ast_to_js = function(ast) {
