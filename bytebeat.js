@@ -7,10 +7,12 @@ function showAudioVisual(sound, player, viz) {
 
 
 function compileComposer(text) {
-    return eval("(function(t) { return "
-                + text.replace(/sin|cos|tan|floor|ceil/g,
-                               function(str) { return "Math."+str; })
-                + "})");
+    // (0,eval) explained at
+    // http://perfectionkills.com/global-eval-what-are-the-options/
+    return (0,eval)("(function(t) { return "
+                    + text.replace(/sin|cos|tan|floor|ceil/g,
+                                   function(str) { return "Math."+str; })
+                    + "})");
 }
 
 
